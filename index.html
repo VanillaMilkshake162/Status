@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Developer Studios — Status</title>
+  <meta name="description" content="Status page for Developer Studios — components, uptime, incidents." />
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#7c5cff;--up:#10b981;--down:#ef4444;--warn:#f59e0b}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:linear-gradient(180deg,#071023 0%, #081329 60%); color:#e6eef6}
+    .wrap{max-width:980px;margin:28px auto;padding:20px}
+
+    header{display:flex;gap:16px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#4cc9f0);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:20px;box-shadow:0 6px 18px rgba(124,92,255,0.14)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .status-banner{margin-top:18px;padding:14px;border-radius:12px;background:linear-gradient(90deg,rgba(124,92,255,0.08),rgba(12,18,28,0.08));display:flex;align-items:center;justify-content:space-between}
+    .status-left{display:flex;gap:14px;align-items:center}
+    .status-dot{width:14px;height:14px;border-radius:50%}
+    .status-text{font-weight:700}
+    .meta{color:var(--muted);font-size:13px}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:18px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:16px;border-radius:12px;box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+    .components-list{display:flex;flex-direction:column;gap:10px}
+    .component{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent)}
+    .comp-left{display:flex;gap:12px;align-items:center}
+    .comp-name{font-weight:600}
+    .comp-meta{color:var(--muted);font-size:12px}
+    .badge{padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px}
+    .up{background:rgba(16,185,129,0.12);color:var(--up)}
+    .down{background:rgba(239,68,68,0.12);color:var(--down)}
+    .maint{background:rgba(245,158,11,0.08);color:var(--warn)}
+
+    .right-column .card + .card{margin-top:12px}
+    .incidents .incident{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);margin-bottom:10px}
+    .incident h4{margin:0 0 6px 0}
+    .muted{color:var(--muted)}
+
+    .controls{display:flex;gap:8px;align-items:center}
+    .btn{border:0;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.03);color:inherit;font-weight:600;cursor:pointer}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.03)}
+
+    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+
+    /* tiny sparkline */
+    .spark{height:36px;width:120px}
+    .small{font-size:12px}
+
+    /* subscribe */
+    .subscribe{display:flex;gap:8px;margin-top:10px}
+    input[type=email]{flex:1;padding:10px;border-radius:10px;border:0;background:rgba(255,255,255,0.03);color:inherit}
+
+    /* accessibility */
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">DS</div>
+      <div>
+        <h1>Developer Studios — Status</h1>
+        <p class="lead">Realtime view of service health, incidents, and uptime for Developer Studios.</p>
+      </div>
+    </header>
+
+    <div class="status-banner card" id="statusBanner">
+      <div class="status-left">
+        <div class="status-dot" id="globalDot" style="background:var(--up)"></div>
+        <div>
+          <div class="status-text" id="globalStatus">All systems operational</div>
+          <div class="meta" id="statusMeta">Last checked: <span id="lastChecked">—</span></div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="refreshBtn">Refresh</button>
+        <button class="btn secondary" id="simulateBtn">Simulate incident</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <main>
+        <section class="card">
+          <h3 style="margin-top:0">Services & Components</h3>
+          <div class="components-list" id="componentsList">
+            <!-- components inserted by JS -->
+          </div>
+        </section>
+
+        <section class="card" style="margin-top:12px">
+          <h3 style="margin-top:0">Incident History</h3>
+          <div class="incidents" id="incidents">
+            <!-- incidents inserted by JS -->
+          </div>
+        </section>
+      </main>
+
+      <aside class="right-column">
+        <div class="card">
+          <h4 style="margin:0 0 8px 0">Uptime (30 days)</h4>
+          <div class="small muted">Summary: <strong id="uptimePercent">99.99%</strong></div>
+          <svg class="spark" id="sparkline" viewBox="0 0 120 36" aria-hidden="true"></svg>
+          <div style="margin-top:10px" class="small muted">Next scheduled maintenance: <strong id="nextMaint">None scheduled</strong></div>
+        </div>
+
+        <div class="card">
+          <h4 style="margin:0 0 8px 0">Subscribe for updates</h4>
+          <p class="muted small">Get emailed when incidents occur.</p>
+          <div class="subscribe">
+            <input type="email" id="email" placeholder="your@email.com" aria-label="Email address" />
+            <button class="btn" id="subscribeBtn">Subscribe</button>
+          </div>
+          <div id="subMsg" class="muted small" style="margin-top:8px"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4 style="margin:0 0 8px 0">Status API</h4>
+          <p class="muted small">JSON endpoint for automation</p>
+          <pre style="background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;font-size:13px;margin:0">/api/status.json</pre>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <div>Powered by Developer Studios • <span id="buildId">build #1</span></div>
+    </footer>
+  </div>
+
+  <script>
+    // Sample data model — in a real deployment this would be fetched from your backend
+    const data = {
+      buildId: 'build-20251020-01',
+      components: [
+        { id: 'website', name: 'Website', status: 'up', desc: 'Main marketing & dashboard' },
+        { id: 'cdn', name: 'CDN', status: 'up', desc: 'Static asset CDN' },
+        { id: 'api', name: 'API', status: 'up', desc: 'Public REST API' },
+        { id: 'auth', name: 'Auth', status: 'up', desc: 'Login & identity' },
+        { id: 'billing', name: 'Billing', status: 'up', desc: 'Payments & invoices' }
+      ],
+      incidents: [
+        // historical incidents
+      ],
+      uptime30: 99.99,
+      nextMaintenance: null,
+      lastChecked: null
+    };
+
+    // helpers
+    function el(tag, attrs={}, text=''){
+      const e = document.createElement(tag);
+      for(const k in attrs) e.setAttribute(k, attrs[k]);
+      if(text) e.textContent = text;
+      return e;
+    }
+
+    function renderComponents(){
+      const list = document.getElementById('componentsList'); list.innerHTML = '';
+      data.components.forEach(c => {
+        const comp = el('div',{class:'component'});
+        const left = el('div',{class:'comp-left'});
+        const dot = el('div',{style:`width:12px;height:12px;border-radius:50%;background:${c.status==='up'? 'var(--up)': c.status==='down'? 'var(--down)': 'var(--warn)'} `});
+        const nameWrap = el('div');
+        const name = el('div',{class:'comp-name'},c.name);
+        const desc = el('div',{class:'comp-meta'},c.desc);
+        nameWrap.appendChild(name); nameWrap.appendChild(desc);
+        left.appendChild(dot); left.appendChild(nameWrap);
+        const right = el('div');
+        const badge = el('div',{class:`badge ${c.status==='up'?'up': c.status==='down'?'down':'maint'}`}, c.status==='up'?'Operational': c.status==='down'?'Down':'Maintenance');
+        right.appendChild(badge);
+        comp.appendChild(left); comp.appendChild(right);
+        list.appendChild(comp);
+      });
+    }
+
+    function renderIncidents(){
+      const box = document.getElementById('incidents'); box.innerHTML = '';
+      if(data.incidents.length===0){ box.appendChild(el('div',{class:'muted small'},'No incidents reported.')) ; return }
+      data.incidents.slice().reverse().forEach(i => {
+        const node = el('div',{class:'incident'});
+        const h = el('h4',{},i.title + (i.status==='resolved' ? ' — Resolved' : i.status==='monitoring' ? ' — Monitoring' : ' — Investigating'));
+        const when = el('div',{class:'muted small'}, new Date(i.started).toLocaleString());
+        const body = el('div',{},i.details);
+        node.appendChild(h); node.appendChild(when); node.appendChild(body);
+        box.appendChild(node);
+      })
+    }
+
+    function updateGlobalStatus(){
+      const down = data.components.some(c=>c.status==='down');
+      const maint = data.components.some(c=>c.status==='maintenance');
+      const globalText = down? 'Partial outage' : (maint? 'Maintenance ongoing' : 'All systems operational');
+      document.getElementById('globalStatus').textContent = globalText;
+      const dot = document.getElementById('globalDot');
+      dot.style.background = down? 'var(--down)' : (maint? 'var(--warn)' : 'var(--up)');
+      document.getElementById('lastChecked').textContent = new Date().toLocaleString();
+      document.getElementById('buildId').textContent = data.buildId;
+      document.getElementById('uptimePercent').textContent = data.uptime30 + '%';
+      document.getElementById('nextMaint').textContent = data.nextMaintenance || 'None scheduled';
+    }
+
+    function drawSparkline(){
+      // sample sparkline from random uptime points
+      const svg = document.getElementById('sparkline'); svg.innerHTML = '';
+      const points = Array.from({length:20}, ()=> 24 - Math.random()*6);
+      const w = 120, h=36;
+      const path = points.map((v,i)=> `${i===0?'M':'L'} ${ (i/(points.length-1))*w } ${v}`).join(' ');
+      const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d', path); p.setAttribute('fill','none'); p.setAttribute('stroke','white'); p.setAttribute('stroke-opacity','0.9'); p.setAttribute('stroke-width','1.2'); p.setAttribute('stroke-linecap','round');
+      svg.appendChild(p);
+    }
+
+    function refreshAll(){
+      // placeholder for fetch: simulate network fetch delay
+      data.lastChecked = Date.now();
+      renderComponents(); renderIncidents(); updateGlobalStatus(); drawSparkline();
+    }
+
+    // simulate incident for demo
+    function simulateIncident(){
+      // pick a random service to go down
+      const idx = Math.floor(Math.random()*data.components.length);
+      const comp = data.components[idx];
+      comp.status = 'down';
+      const inc = {
+        id: 'inc-' + Date.now(),
+        title: `${comp.name} is experiencing issues`,
+        details: `We're investigating increased errors and latency for ${comp.name}. Our engineers are looking into it.`,
+        started: Date.now(),
+        status: 'investigating'
+      };
+      data.incidents.push(inc);
+      data.uptime30 = Math.max(95, (data.uptime30 - Math.random()*0.2).toFixed(2));
+      refreshAll();
+    }
+
+    // subscribe (demo only)
+    function subscribe(email){
+      if(!email || !/@/.test(email)) return 'Enter a valid email';
+      return `Subscribed ${email} — you will receive updates.`
+    }
+
+    // wire up controls
+    document.getElementById('refreshBtn').addEventListener('click', ()=>{ refreshAll(); });
+    document.getElementById('simulateBtn').addEventListener('click', ()=>{ simulateIncident(); });
+    document.getElementById('subscribeBtn').addEventListener('click', ()=>{
+      const msg = subscribe(document.getElementById('email').value);
+      document.getElementById('subMsg').textContent = msg;
+    });
+
+    // auto-refresh every 30s
+    setInterval(()=> refreshAll(), 30000);
+
+    // initialize
+    refreshAll();
+
+    // expose a tiny API for embedding / automation
+    window.__STATUS_API__ = function(){
+      return {
+        buildId: data.buildId,
+        global: document.getElementById('globalStatus').textContent,
+        components: data.components.map(c=>({id:c.id,name:c.name,status:c.status})),
+        incidents: data.incidents
+      }
+    }
+  </script>
+</body>
+</html>
