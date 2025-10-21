@@ -14,9 +14,54 @@
       padding: 0;
     }
 
+    .banner {
+      background-color: #1b2433;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 1100px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .banner.ok {
+      background-color: rgba(0, 255, 110, 0.1);
+    }
+
+    .banner.warning {
+      background-color: rgba(255, 180, 0, 0.1);
+    }
+
+    .banner.error {
+      background-color: rgba(255, 60, 60, 0.1);
+    }
+
+    .banner .icon {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      margin-right: 12px;
+    }
+
+    .icon.red { background-color: #ff4b4b; }
+    .icon.yellow { background-color: #ffbf00; }
+    .icon.green { background-color: #00ff9f; }
+
+    .banner h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #fff;
+    }
+
+    .banner span {
+      font-size: 14px;
+      color: #aaa;
+    }
+
     .container {
       max-width: 1100px;
-      margin: 40px auto;
+      margin: 20px auto 40px auto;
       padding: 20px;
       display: flex;
       gap: 30px;
@@ -75,15 +120,16 @@
       color: #ff5555;
     }
 
+    .development {
+      background-color: rgba(255, 191, 0, 0.15);
+      color: #ffbf00;
+    }
+
     .uptime-card, .subscribe-card, .api-card, .incident-card {
       background-color: #101c2c;
       border-radius: 12px;
       padding: 20px;
       margin-top: 20px;
-    }
-
-    .uptime-card strong {
-      color: #fff;
     }
 
     input[type="email"] {
@@ -125,6 +171,12 @@
       font-size: 15px;
     }
 
+    .incident-dev {
+      color: #ffbf00;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+
     .last-updated {
       margin-top: 10px;
       font-size: 13px;
@@ -133,6 +185,17 @@
   </style>
 </head>
 <body>
+  <!-- Dynamic Banner -->
+  <div id="statusBanner" class="banner">
+    <div style="display: flex; align-items: center;">
+      <div class="icon green"></div>
+      <div>
+        <h3 id="bannerTitle">All Systems Operational</h3>
+        <span id="bannerSubtitle">Last checked: Just now</span>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
     <div class="left">
       <h2>Services & Components</h2>
@@ -142,7 +205,7 @@
           <strong>Website</strong>
           <br><span>Main marketing & dashboard</span>
         </div>
-        <div class="status down">Down</div>
+        <div class="status operational">Operational</div>
       </div>
 
       <div class="component">
@@ -166,7 +229,7 @@
           <strong>Auth</strong>
           <br><span>Login & identity</span>
         </div>
-        <div class="status operational">Operational</div>
+        <div class="status development">In Development</div>
       </div>
 
       <div class="component">
@@ -174,14 +237,14 @@
           <strong>Billing</strong>
           <br><span>Payments & invoices</span>
         </div>
-        <div class="status operational">Operational</div>
+        <div class="status development">In Development</div>
       </div>
 
       <div class="incident-card">
         <h3>Incident History</h3>
-        <p class="incident-text">
-          Website down, Developer Studios Engineers are currently working on it.
-        </p>
+        <p class="incident-text">Website down, Developer Studios Engineers are currently working on it.</p>
+        <p class="incident-dev">Auth: IN DEVELOPMENT</p>
+        <p class="incident-dev">Billing: IN DEVELOPMENT</p>
       </div>
     </div>
 
@@ -215,12 +278,10 @@
   </footer>
 
   <script>
-    // Auto refresh every 60 seconds
-    setTimeout(() => {
-      location.reload();
-    }, 60000);
+    // Auto refresh every 60s
+    setTimeout(() => location.reload(), 60000);
 
-    // Display last updated time
+    // Last updated timestamp
     const now = new Date();
     const formatted = now.toLocaleString("en-GB", {
       day: "2-digit",
@@ -230,6 +291,38 @@
       minute: "2-digit",
     });
     document.getElementById("lastUpdated").textContent = "Last updated: " + formatted;
+
+    // Dynamic Banner Logic
+    const statuses = document.querySelectorAll(".status");
+    let hasDown = false;
+    let hasDevelopment = false;
+
+    statuses.forEach((el) => {
+      if (el.classList.contains("down")) hasDown = true;
+      if (el.classList.contains("development")) hasDevelopment = true;
+    });
+
+    const banner = document.getElementById("statusBanner");
+    const title = document.getElementById("bannerTitle");
+    const subtitle = document.getElementById("bannerSubtitle");
+    const icon = banner.querySelector(".icon");
+
+    if (hasDown) {
+      banner.classList.add("error");
+      icon.className = "icon red";
+      title.textContent = "Partial Outage";
+      subtitle.textContent = "Last checked: Just now";
+    } else if (hasDevelopment) {
+      banner.classList.add("warning");
+      icon.className = "icon yellow";
+      title.textContent = "Partial Outage (Some Components in Development)";
+      subtitle.textContent = "Last checked: Just now";
+    } else {
+      banner.classList.add("ok");
+      icon.className = "icon green";
+      title.textContent = "All Systems Operational";
+      subtitle.textContent = "Last checked: Just now";
+    }
   </script>
 </body>
 </html>
